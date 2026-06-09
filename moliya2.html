@@ -28,19 +28,47 @@ body{
 .app-name{font-size:28px;font-weight:800;letter-spacing:-.8px;margin-bottom:20px}
 .app-name span{background:linear-gradient(90deg,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 
-/* rates */
-.rates-bar{display:flex;gap:8px;overflow-x:auto;padding:0 20px 16px;scrollbar-width:none}
-.rates-bar::-webkit-scrollbar{display:none}
-.rpill{
-  display:flex;align-items:center;gap:7px;padding:9px 14px;
-  border-radius:30px;border:1px solid var(--gb);background:var(--glass);
-  backdrop-filter:blur(10px);white-space:nowrap;flex-shrink:0;
+/* header */
+.header{padding:52px 24px 16px}
+.header-row{display:flex;align-items:flex-start;justify-content:space-between}
+.greeting{font-size:13px;color:var(--muted);font-weight:500;margin-bottom:2px}
+.app-name{font-size:28px;font-weight:800;letter-spacing:-.8px}
+.app-name span{background:linear-gradient(90deg,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.top-right{display:flex;align-items:center;gap:6px;margin-top:8px}
+.cur-tog{
+  padding:7px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);color:var(--muted);font-size:13px;font-weight:700;
+  cursor:pointer;font-family:inherit;transition:all .2s;
 }
-.rpill .rlabel{font-size:11px;color:var(--muted);font-weight:600}
-.rpill .rval{font-size:13px;font-weight:700}
-.rpill.loading .rval{animation:pulse 1.2s infinite;color:var(--muted)}
-@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
-.rate-ts{font-size:10px;color:var(--muted);padding:0 24px;margin-bottom:20px}
+.cur-tog.active-jpy{background:rgba(251,191,36,.2);border-color:rgba(251,191,36,.5);color:#fbbf24}
+.cur-tog.active-uzs{background:rgba(16,217,130,.2);border-color:rgba(16,217,130,.5);color:var(--green)}
+.cur-tog.active-usd{background:rgba(129,140,248,.25);border-color:rgba(129,140,248,.55);color:#818cf8}
+.rate-icon-btn{
+  width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;
+}
+.rate-icon-btn.open{background:rgba(124,58,237,.25);border-color:#7c3aed88}
+
+/* collapsible rates panel */
+.rates-panel{
+  max-height:0;overflow:hidden;transition:max-height .35s ease;
+  margin:0 20px;
+}
+.rates-panel.open{max-height:200px}
+.rates-inner{
+  background:var(--glass);border:1px solid var(--gb);border-radius:16px;
+  padding:14px 18px;backdrop-filter:blur(16px);margin-bottom:12px;
+}
+.rate-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.rate-row:last-of-type{border:none}
+.rate-lbl{font-size:13px;font-weight:700;color:var(--muted);min-width:60px}
+.rate-eq{font-size:13px;color:var(--muted)}
+.rate-val{font-size:14px;font-weight:700;color:var(--text)}
+.rate-ts2{font-size:10px;color:var(--muted);margin-top:8px}
+
+/* rates - old (unused but keep for compat) */
+.rate-ts{display:none}
 
 /* balance card */
 .bal-card{
@@ -51,7 +79,6 @@ body{
 }
 .bal-card::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(167,139,250,.15) 0%,transparent 70%);border-radius:50%}
 .bl{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
-.busd{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:6px;font-weight:500}
 .bamt{font-size:38px;font-weight:800;letter-spacing:-1.5px;line-height:1;margin-bottom:20px}
 .bamt.pos{color:#fff}.bamt.neg{color:var(--red)}
 .brow{display:flex;gap:10px;position:relative;z-index:1}
@@ -195,33 +222,42 @@ input[type=date].fi{max-width:142px;color-scheme:dark}
 <body>
 
 <div class="header">
-  <div class="greeting">Moliya daftarim 📒</div>
-  <div class="app-name"><span>Moliya</span></div>
+  <div class="header-row">
+    <div>
+      <div class="greeting">Moliya daftarim 📒</div>
+      <div class="app-name"><span>Moliya</span></div>
+    </div>
+    <div class="top-right">
+      <button class="cur-tog" id="ctUZS" onclick="setBalCur('UZS')">so'm</button>
+      <button class="cur-tog active-jpy" id="ctJPY" onclick="setBalCur('JPY')">¥</button>
+      <button class="cur-tog" id="ctUSD" onclick="setBalCur('USD')">$</button>
+      <button class="rate-icon-btn" id="rateIconBtn" onclick="toggleRates()">📊</button>
+    </div>
+  </div>
 </div>
 
-<!-- Live rates -->
-<div class="rates-bar">
-  <div class="rpill loading" id="rpJPY"><span class="rlabel">¥ JPY/USD</span><span class="rval" id="rvJPY">…</span></div>
-  <div class="rpill loading" id="rpUZS"><span class="rlabel">🇺🇿 UZS/USD</span><span class="rval" id="rvUZS">…</span></div>
-  <div class="rpill loading" id="rpJU"><span class="rlabel">¥→so'm</span><span class="rval" id="rvJU">…</span></div>
+<!-- Collapsible rates panel -->
+<div class="rates-panel" id="ratesPanel">
+  <div class="rates-inner">
+    <div class="rate-row"><span class="rate-lbl">100 $</span><span class="rate-eq">=</span><span class="rate-val" id="rv100JPY">…</span></div>
+    <div class="rate-row"><span class="rate-lbl">100 $</span><span class="rate-eq">=</span><span class="rate-val" id="rv100UZS">…</span></div>
+    <div class="rate-row"><span class="rate-lbl">100 ¥</span><span class="rate-eq">=</span><span class="rate-val" id="rv100JU">…</span></div>
+    <div class="rate-ts2" id="rateTs">…</div>
+  </div>
 </div>
-<div class="rate-ts" id="rateTs">Kurs yuklanmoqda…</div>
 
 <!-- Balance -->
 <div class="bal-card">
   <div class="bl">Umumiy balans</div>
-  <div class="busd" id="balUSD">≈ $0.00</div>
   <div class="bamt pos" id="balAmt">—</div>
   <div class="brow">
     <div class="bstat">
       <div class="bstat-l"><span class="dot dg"></span>Kirim</div>
-      <div class="bstat-v g" id="incV">$0</div>
-      <div class="bstat-s" id="incSub">—</div>
+      <div class="bstat-v g" id="incV">—</div>
     </div>
     <div class="bstat">
       <div class="bstat-l"><span class="dot dr"></span>Chiqim</div>
-      <div class="bstat-v r" id="expV">$0</div>
-      <div class="bstat-s" id="expSub">—</div>
+      <div class="bstat-v r" id="expV">—</div>
     </div>
   </div>
 </div>
@@ -306,6 +342,7 @@ input[type=date].fi{max-width:142px;color-scheme:dark}
 let entries = JSON.parse(localStorage.getItem('mf3') || '[]');
 let rates = JSON.parse(localStorage.getItem('mf3r') || 'null');
 let ctype = 'income', ccat = '', ecur = 'JPY', fval = '';
+let balCur = 'JPY'; // which currency to show balance in
 const symMap = {JPY:'¥', UZS:"so'm", USD:'$'};
 const today = new Date().toISOString().split('T')[0];
 document.getElementById('dateIn').value = today;
@@ -326,11 +363,25 @@ async function fetchRates() {
 
 function showRates() {
   if (!rates) return;
-  document.getElementById('rvJPY').textContent = '1$ = ¥' + Math.round(rates.JPY);
-  document.getElementById('rvUZS').textContent = '1$ = ' + Math.round(rates.UZS).toLocaleString() + " so'm";
-  document.getElementById('rvJU').textContent = '¥1 = ' + Math.round(rates.UZS/rates.JPY) + " so'm";
-  ['rpJPY','rpUZS','rpJU'].forEach(id => document.getElementById(id).classList.remove('loading'));
-  document.getElementById('rateTs').textContent = 'Kurs: ' + rates.ts;
+  document.getElementById('rv100JPY').textContent = '¥' + Math.round(100 * rates.JPY).toLocaleString();
+  document.getElementById('rv100UZS').textContent = Math.round(100 * rates.UZS).toLocaleString() + " so'm";
+  document.getElementById('rv100JU').textContent = Math.round(100 * rates.UZS / rates.JPY).toLocaleString() + " so'm";
+  document.getElementById('rateTs').textContent = 'Yangilangan: ' + rates.ts;
+}
+
+function toggleRates() {
+  const panel = document.getElementById('ratesPanel');
+  const btn = document.getElementById('rateIconBtn');
+  const isOpen = panel.classList.toggle('open');
+  btn.classList.toggle('open', isOpen);
+}
+
+function setBalCur(c) {
+  balCur = c;
+  ['JPY','UZS','USD'].forEach(x => {
+    document.getElementById('ct'+x).className = 'cur-tog' + (x===c ? ' active-'+x.toLowerCase() : '');
+  });
+  renderSummary();
 }
 
 function toUSD(a, c) {
@@ -412,17 +463,27 @@ function renderSummary() {
   const exp = entries.filter(e=>e.type==='expense');
   const iU = inc.reduce((s,e)=>s+(e.usd||toUSD(e.amount,e.currency)||0),0);
   const eU = exp.reduce((s,e)=>s+(e.usd||toUSD(e.amount,e.currency)||0),0);
-  const bU = iU-eU;
-  document.getElementById('balUSD').textContent = fUSD(bU);
-  const ba = document.getElementById('balAmt');
-  ba.textContent = rates ? (bU<0?'-':'')+'¥'+Math.round(Math.abs(bU)*rates.JPY).toLocaleString() : fUSD(bU);
-  ba.className = 'bamt '+(bU>=0?'pos':'neg');
-  document.getElementById('incV').textContent = fUSD(iU)||'$0';
-  document.getElementById('expV').textContent = fUSD(eU)||'$0';
-  if (rates) {
-    document.getElementById('incSub').textContent = '¥'+Math.round(iU*rates.JPY).toLocaleString();
-    document.getElementById('expSub').textContent = '¥'+Math.round(eU*rates.JPY).toLocaleString();
+  const bU = iU - eU;
+
+  function toBalCur(usd) {
+    if (!rates) return null;
+    if (balCur==='USD') return usd;
+    if (balCur==='JPY') return usd * rates.JPY;
+    if (balCur==='UZS') return usd * rates.UZS;
   }
+  function fmtBal(usd) {
+    const v = toBalCur(usd);
+    if (v===null) return '—';
+    if (balCur==='JPY') return '¥' + Math.round(Math.abs(v)).toLocaleString();
+    if (balCur==='UZS') return Math.round(Math.abs(v)).toLocaleString() + " so'm";
+    return '$' + Math.abs(v).toFixed(2);
+  }
+
+  const ba = document.getElementById('balAmt');
+  ba.textContent = (bU<0?'-':'') + fmtBal(bU);
+  ba.className = 'bamt '+(bU>=0?'pos':'neg');
+  document.getElementById('incV').textContent = fmtBal(iU);
+  document.getElementById('expV').textContent = fmtBal(eU);
 }
 
 // --- LIST ---
